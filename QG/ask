@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+# import external packages
+from datasets import load_dataset
+from transformers import BertTokenizer, BertModel, AutoTokenizer, AutoModelWithLMHead, AutoModelForSeq2SeqLM
+import transformers
+from datasets import load_dataset
+from tqdm import tqdm
+import numpy as np
+import gc
+import torch
+import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
+from collections import Counter
+from torchsummaryX import summary
+from sklearn.metrics import accuracy_score
+import re
+import argparse
+
+# import self-implemented
+from network import Network
+from utils import *
+
+
+transformers.logging.set_verbosity(transformers.logging.CRITICAL)
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("file_path", type=str, help="Number of questions")
+parser.add_argument("N_question", type=int, help="Number of questions")
+args = parser.parse_args()
+file_path = args.file_path
+N_question = args.N_question
+
+with open(file_path,"r") as f:
+    context = f.read()
+
+#initialize
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+tokenizer1 = AutoTokenizer.from_pretrained("prajjwal1/bert-tiny", do_lower_case=True)
+encoder1 = BertModel.from_pretrained("prajjwal1/bert-tiny")
+
+#model config
+config = {
+    'batch_size': 512,
+    'dropout_rate': 0.5,
+    'learning_rate': 1e-1,
+    'epochs': 10
+}
+
+
+
+#Answer Extraction
+PATH = './model/answer_extractor.pth'
+QE_model = Network(dropout=config['dropout_rate']).to(device)
+QE_model.load_state_dict(torch.load(PATH)['model_state_dict'])
+QE_model.eval()
+
+
+pred_answer = predict_answer(QE_model, context, tokenizer1, encoder1, device)
+
+#Question Generation based on the answer
+model_name = "mrm8488/t5-base-finetuned-question-generation-ap"
+tokenizer2 = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+QG_model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+
+questions = generate_questions(pred_answer, context, tokenizer2, QG_model, device, 256, N_question)
+
+for question in questions:
+    print(question[10:])
