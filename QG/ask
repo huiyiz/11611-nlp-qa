@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/conda/bin/python
 # import external packages
 from transformers import BertModel, AutoTokenizer, AutoModelForSeq2SeqLM
 import transformers
@@ -6,8 +6,8 @@ import torch
 import argparse
 
 # import self-implemented
-from network import Network
-from utils import *
+from src.network import Network
+from src.utils import *
 
 
 transformers.logging.set_verbosity(transformers.logging.CRITICAL)
@@ -24,10 +24,15 @@ with open(file_path, "r") as f:
     context = f.read()
 
 # initialize
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+# device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = 'cpu'
+
 tokenizer1 = AutoTokenizer.from_pretrained(
-    "prajjwal1/bert-tiny", do_lower_case=True)
-encoder1 = BertModel.from_pretrained("prajjwal1/bert-tiny")
+    "pretrained/tok1", local_files_only=True)
+encoder1 = BertModel.from_pretrained("pretrained/model1", local_files_only=True)
+
+tokenizer2 = AutoTokenizer.from_pretrained("pretrained/tok2", local_files_only=True)
+QG_model = AutoModelForSeq2SeqLM.from_pretrained("pretrained/model2", local_files_only=True)
 
 # model config
 config = {
@@ -39,19 +44,15 @@ config = {
 
 
 # Answer Extraction
-PATH = '/root/611proj/QG/answer_extractor.pth'
+model_path = './trained_model/answer_extractor.pth'
 QE_model = Network(dropout=config['dropout_rate']).to(device)
-QE_model.load_state_dict(torch.load(PATH)['model_state_dict'])
+QE_model.load_state_dict(torch.load(model_path)['model_state_dict'])
 QE_model.eval()
 
 
 pred_answer = predict_answer(QE_model, context, tokenizer1, encoder1, device)
 
 # Question Generation based on the answer
-model_name = "mrm8488/t5-base-finetuned-question-generation-ap"
-tokenizer2 = AutoTokenizer.from_pretrained(model_name, use_fast=False)
-QG_model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
 
 questions = generate_questions(
     pred_answer, context, tokenizer2, QG_model, device, 256, N_question)
