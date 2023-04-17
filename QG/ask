@@ -1,4 +1,4 @@
-#!/opt/conda/bin/python
+#!/usr/bin/env python
 # import external packages
 from transformers import BertModel, AutoTokenizer, AutoModelForSeq2SeqLM
 import transformers
