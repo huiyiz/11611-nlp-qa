@@ -44,9 +44,6 @@ config = {
 
 # Answer Extraction
 model_path = './trained_model/answer_extractor.pth'
-QE_model = Network(dropout=config['dropout_rate']).to(device)
-QE_model.load_state_dict(torch.load(model_path)['model_state_dict'])
-QE_model.eval()
 
 
 # pred_answer = predict_answer(QE_model, context, tokenizer1, encoder1, device)
@@ -59,13 +56,16 @@ question_part1 = run_answer_agnostic_model(context, N_question, answer_agnositic
 
 question_part2 = []
 
-tokenizer1 = AutoTokenizer.from_pretrained("prajjwal1/bert-tiny", do_lower_case=True)
-encoder1 = BertModel.from_pretrained("prajjwal1/bert-tiny")
-
-MixQG_tokenizer = AutoTokenizer.from_pretrained('Salesforce/mixqg-base')
-MixQG_model = AutoModelForSeq2SeqLM.from_pretrained('Salesforce/mixqg-base')
 
 if len(question_part1) < N_question:
+    tokenizer1 = AutoTokenizer.from_pretrained("prajjwal1/bert-tiny", do_lower_case=True)
+    encoder1 = BertModel.from_pretrained("prajjwal1/bert-tiny")
+
+    MixQG_tokenizer = AutoTokenizer.from_pretrained('Salesforce/mixqg-base')
+    MixQG_model = AutoModelForSeq2SeqLM.from_pretrained('Salesforce/mixqg-base')
+    QE_model = Network(dropout=config['dropout_rate']).to(device)
+    QE_model.load_state_dict(torch.load(model_path)['model_state_dict'])
+    QE_model.eval()
     question_part2 = run_answer_aware_model(context, device, N_question - len(question_part1) , QE_model, tokenizer1, encoder1, MixQG_tokenizer, MixQG_model)
 
 questions = question_part1 + question_part2
