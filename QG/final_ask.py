@@ -30,8 +30,8 @@ device = 'cpu'
 #     "pretrained/tok1", local_files_only=True)
 # encoder1 = BertModel.from_pretrained("pretrained/model1", local_files_only=True)
 
-tokenizer2 = AutoTokenizer.from_pretrained("pretrained/tok2", local_files_only=True)
-QG_model = AutoModelForSeq2SeqLM.from_pretrained("pretrained/model2", local_files_only=True)
+# tokenizer2 = AutoTokenizer.from_pretrained("pretrained/tok2", local_files_only=True)
+# QG_model = AutoModelForSeq2SeqLM.from_pretrained("pretrained/model2", local_files_only=True)
 
 # model config
 config = {
