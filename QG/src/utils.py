@@ -4,6 +4,9 @@ import numpy as np
 import random
 import nltk
 from nltk import word_tokenize
+import os
+
+nltk.data.path.append('/home/ec2-user/11611-nlp-qa/QG/nltk_data')
 
 def split_into_sentences(text):
     alphabets= "([A-Za-z])"
@@ -51,9 +54,9 @@ def answer_agnostic_model_postprocess_output(output):
     return output
 
 def run_answer_agnostic_model(context, N, answer_agnositic_tokenizer, answer_agnositic_model):
-    #将原文裁剪到只剩N句话
+    #将原文裁剪到只剩前N句话
     context_sentences = split_into_sentences(context)
-    context_sentences = list(np.random.choice(context_sentences, size=N, replace=False))
+    context_sentences = context_sentences[:N]
     context_short = ' '.join(context_sentences)
 
     generator_args = {
@@ -246,7 +249,16 @@ def run_answer_aware_model(context, device, N , QE_model, tokenizer1, encoder1, 
     if len(answers_sentences) == 0:
         print("Cannot generate required questions!")
         return None
+
+    assert question_type == 'any'
+    answers_sentences = sample_answers(answers_sentences, N // 2 + 1)
+
     model_input = format_type_inputs(answers_sentences, question_type)
     model_input = sample_input(model_input, N)
     pred_quesitons = get_question(MixQG_tokenizer, MixQG_model, model_input)
-    return pred_quesitons[:N]
+    return pred_quesitons
+
+def sample_answers(answers_sentences, N):
+    inds = np.random.choice(len(answers_sentences), N, replace = False)
+    rand_vals = [answers_sentences[ind] for ind in inds]   
+    return rand_vals

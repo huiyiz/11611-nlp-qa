@@ -13,7 +13,7 @@ transformers.logging.set_verbosity(transformers.logging.CRITICAL)
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("file_path", type=str, help="Number of questions")
+parser.add_argument("file_path", type=str, help="File path")
 parser.add_argument("N_question", type=int, help="Number of questions")
 args = parser.parse_args()
 file_path = args.file_path
@@ -24,6 +24,7 @@ with open(file_path, "r") as f:
 
 # initialize
 # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+# print(device)
 device = 'cpu'
 
 # tokenizer1 = AutoTokenizer.from_pretrained(
@@ -52,21 +53,24 @@ model_path = './trained_model/answer_extractor.pth'
 answer_agnositic_model = T5ForConditionalGeneration.from_pretrained("ThomasSimonini/t5-end2end-question-generation")
 answer_agnositic_tokenizer = T5TokenizerFast.from_pretrained('t5-small', model_max_length=2048)
 
-question_part1 = run_answer_agnostic_model(context, N_question, answer_agnositic_tokenizer, answer_agnositic_model)
+question_part1 = run_answer_agnostic_model(context, 2*N_question, answer_agnositic_tokenizer, answer_agnositic_model)
 
 question_part2 = []
 
+#balance the 2 types of questions
+if len(question_part1) > N_question // 3:
+    question_part1 = question_part1[ : N_question // 3]
 
-if len(question_part1) < N_question:
-    tokenizer1 = AutoTokenizer.from_pretrained("prajjwal1/bert-tiny", do_lower_case=True)
-    encoder1 = BertModel.from_pretrained("prajjwal1/bert-tiny")
+tokenizer1 = AutoTokenizer.from_pretrained("prajjwal1/bert-tiny", do_lower_case=True)
+encoder1 = BertModel.from_pretrained("prajjwal1/bert-tiny")
 
-    MixQG_tokenizer = AutoTokenizer.from_pretrained('Salesforce/mixqg-base')
-    MixQG_model = AutoModelForSeq2SeqLM.from_pretrained('Salesforce/mixqg-base')
-    QE_model = Network(dropout=config['dropout_rate']).to(device)
-    QE_model.load_state_dict(torch.load(model_path)['model_state_dict'])
-    QE_model.eval()
-    question_part2 = run_answer_aware_model(context, device, N_question - len(question_part1) , QE_model, tokenizer1, encoder1, MixQG_tokenizer, MixQG_model)
+MixQG_tokenizer = AutoTokenizer.from_pretrained('Salesforce/mixqg-base')
+MixQG_model = AutoModelForSeq2SeqLM.from_pretrained('Salesforce/mixqg-base')
+QE_model = Network(dropout=config['dropout_rate']).to(device)
+QE_model.load_state_dict(torch.load(model_path)['model_state_dict'])
+QE_model.eval()
+
+question_part2 = run_answer_aware_model(context, device, N_question - len(question_part1) , QE_model, tokenizer1, encoder1, MixQG_tokenizer, MixQG_model)
 
 questions = question_part1 + question_part2
 
