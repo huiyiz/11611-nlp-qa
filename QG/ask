@@ -38,9 +38,6 @@ config = {
 # Answer Extraction
 model_path = './trained_model/answer_extractor.pth'
 
-
-# pred_answer = predict_answer(QE_model, context, tokenizer1, encoder1, device)
-
 # Question Generation based on the answer
 answer_agnositic_model = T5ForConditionalGeneration.from_pretrained("./pretrained_model/answer_agnostic_model").to(device)
 answer_agnositic_tokenizer = T5TokenizerFast.from_pretrained('./pretrained_model/answer_agnostic_tokenizer', model_max_length=2048)
