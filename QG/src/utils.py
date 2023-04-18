@@ -53,7 +53,7 @@ def answer_agnostic_model_postprocess_output(output):
             output[i] = output[i] + '?'
     return output
 
-def run_answer_agnostic_model(context, N, answer_agnositic_tokenizer, answer_agnositic_model):
+def run_answer_agnostic_model(context, N, answer_agnositic_tokenizer, answer_agnositic_model, device):
     #将原文裁剪到只剩前N句话
     context_sentences = split_into_sentences(context)
     context_sentences = context_sentences[:N]
@@ -68,6 +68,7 @@ def run_answer_agnostic_model(context, N, answer_agnositic_tokenizer, answer_agn
     }
     context = "generate questions: " + context_short + " </s>"
     input_ids = answer_agnositic_tokenizer.encode(context, return_tensors="pt")
+    input_ids = input_ids.to(device)
     res = answer_agnositic_model.generate(input_ids, **generator_args)
     output = answer_agnositic_tokenizer.batch_decode(res, skip_special_tokens=True)
     output = [item.split("<sep>") for item in output]
@@ -158,7 +159,7 @@ def context_to_words_inputids(context,  tokenizer):
 def context_to_words(context):
     return re.sub("[^\w]", " ",  context).split()
 
-def tokenize_and_encode_context(context, tokenizer, encoder):
+def tokenize_and_encode_context(context, tokenizer, encoder, device):
     tokenized_context = []
     embeddings = []
     for text in context:
@@ -166,18 +167,19 @@ def tokenize_and_encode_context(context, tokenizer, encoder):
                                  truncation = True, padding='max_length')
         context_token = tokenization['input_ids'][0].detach().numpy()
         tokenized_context.append(context_token)
+        tokenization = tokenization.to(device)
         out = encoder(**tokenization, output_hidden_states=True)
-        embedding = out.last_hidden_state.detach().numpy()
+        embedding = out.last_hidden_state.cpu().detach().numpy()
         assert(embedding.shape[1] == len(context_token))
         embeddings.append(embedding[0])
     return embeddings, tokenized_context, tokenization
 
-def model_predict(model, embeddings):
-    embeddings = torch.tensor(embeddings[0])
+def model_predict(model, embeddings, device):
+    embeddings = torch.tensor(embeddings[0]).to(device)
     predictions = model(embeddings).flatten()
     predictions[predictions >= 0.5] = 1
     predictions[predictions < 0.5] = 0
-    predictions = predictions.detach().numpy().tolist()
+    predictions = predictions.cpu().detach().numpy().tolist()
     return predictions
 
 def get_answer_ids(input_ids, predictions):
@@ -218,9 +220,9 @@ def map_answer_ids_to_words(answer_ids_list, words_ids_list, words_mapping, word
 
 def predict_answer(model, context, tokenizer, encoder, device):
     words_list, words_ids_list, words_mapping = context_to_words_inputids(context, tokenizer)
-    embeddings, _, tokenization = tokenize_and_encode_context([context], tokenizer, encoder)
-    predictions = model_predict(model, embeddings)
-    input_ids = tokenization['input_ids'][0].detach().numpy().tolist()
+    embeddings, _, tokenization = tokenize_and_encode_context([context], tokenizer, encoder, device)
+    predictions = model_predict(model, embeddings, device)
+    input_ids = tokenization['input_ids'][0].cpu().detach().numpy().tolist()
     answer_ids_list = get_answer_ids(input_ids, predictions)
     answers = map_answer_ids_to_words(answer_ids_list, words_ids_list, words_mapping, words_list)
     answers = sorted(set(answers), key=answers.index)
@@ -236,8 +238,9 @@ def process_questions(questions):
         questions_m.append(question)
     return questions_m
 
-def get_question(MixQG_tokenizer, MixQG_model, model_input, max_length=32):
+def get_question(MixQG_tokenizer, MixQG_model, model_input, device):
     input_ids = MixQG_tokenizer(model_input, return_tensors="pt", padding = True).input_ids
+    input_ids = input_ids.to(device)
     generated_ids = MixQG_model.generate(input_ids, max_length=32, num_beams=4) 
     questions = MixQG_tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
     questions = process_questions(questions)
@@ -255,7 +258,7 @@ def run_answer_aware_model(context, device, N , QE_model, tokenizer1, encoder1, 
 
     model_input = format_type_inputs(answers_sentences, question_type)
     model_input = sample_input(model_input, N)
-    pred_quesitons = get_question(MixQG_tokenizer, MixQG_model, model_input)
+    pred_quesitons = get_question(MixQG_tokenizer, MixQG_model, model_input, device)
     return pred_quesitons
 
 def sample_answers(answers_sentences, N):
