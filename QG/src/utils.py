@@ -6,7 +6,7 @@ import nltk
 from nltk import word_tokenize
 import os
 
-nltk.data.path.append('/QG/nltk_data')
+nltk.data.path.append('/home/ec2-user/11611-nlp-qa/QG/nltk_data')
 
 def split_into_sentences(text):
     alphabets= "([A-Za-z])"
@@ -140,9 +140,12 @@ def sample_input(model_input, N):
 def align_answers_with_sentences(answers, sentences):
     answers_sentences = []
     for answer in answers:
-        for sentence in sentences:
+        for i, sentence in enumerate(sentences):
             if answer in sentence:
-                answers_sentences.append((answer, sentence))
+                if i < 4:
+                    answers_sentences.append((answer, " ".join(sentences[:i + 1])))
+                else:
+                    answers_sentences.append((answer, " ".join(sentences[i - 4 : i + 1]))) 
                 break
     return answers_sentences
 
@@ -199,6 +202,8 @@ def get_answer_ids(input_ids, predictions):
                     all_answers_ids.append(ans_span)
                     i = j
                     break
+            if (j >= (len(predictions) - 1)):
+                i = j
         else:
             i += 1
             

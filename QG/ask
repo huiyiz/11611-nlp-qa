@@ -42,7 +42,10 @@ model_path = './trained_model/answer_extractor.pth'
 answer_agnositic_model = T5ForConditionalGeneration.from_pretrained("./pretrained_model/answer_agnostic_model", local_files_only=True).to(device)
 answer_agnositic_tokenizer = T5TokenizerFast.from_pretrained('./pretrained_model/answer_agnostic_tokenizer', model_max_length=2048, local_files_only=True)
 
+
 question_part1 = run_answer_agnostic_model(context, 2*N_question, answer_agnositic_tokenizer, answer_agnositic_model, device)
+
+
 
 question_part2 = []
 
@@ -63,7 +66,8 @@ QE_model.eval()
 
 question_part2 = run_answer_aware_model(context, device, N_question - len(question_part1) , QE_model, tokenizer1, encoder1, MixQG_tokenizer, MixQG_model)
 
-questions = question_part1 + question_part2
+
+questions = list(set(question_part1 + question_part2))
 
 for question in questions:
     print(question)
