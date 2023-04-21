@@ -6,7 +6,7 @@ import nltk
 from nltk import word_tokenize
 import os
 
-nltk.data.path.append('/home/ec2-user/11611-nlp-qa/QG/nltk_data')
+nltk.data.path.append('/QG/nltk_data')
 
 def split_into_sentences(text):
     alphabets= "([A-Za-z])"

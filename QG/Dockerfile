@@ -38,6 +38,7 @@ RUN python3 -m spacy download en_core_web_lg
 # Add the files into container, under QA folder, modify this based on your need
 RUN mkdir /QG
 ADD ask /QG
+ADD a7.txt /QG
 ADD src /QG/src
 ADD nltk_data /QG/nltk_data
 ADD pretrained_model /QG/pretrained_model
