@@ -1,6 +1,6 @@
 # Ensemble Question Generation for FiD-GAR Question Answering
 
-Code Implementation of the paper
+## Code Implementation of the paper
 
 For the QG part, we present a novel ensemble question generation (EQG) technique that overcomes the performance and flexibility constraints of existing methods. EQG consists of two synergistic channels, answer-agnostic and answer-aware, each contributing unique advantages. The answer-agnostic channel enhances our model's performance on conventional metrics, while the answer-aware channel enables users to specify the sentence and answer on which the question is based. By integrating these two channels, our system not only surpasses baseline performance but also offers flexibility for manual answer specification.
 
